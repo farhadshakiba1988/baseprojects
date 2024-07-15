@@ -3,17 +3,25 @@ services:
   app:
     build:
       context: .
-    command: >
-      sh -c "python manage.py migrate &&
-             python manage.py runserver 0.0.0.0:8000"
+    command: ["/wait-for-it.sh", "db", "/entrypoint.sh"]
     ports:
       - '8000:8000'
     volumes:
-      - .:/src
+      - .:/app
+      - static_volume:/app/staticfiles
     depends_on:
       - db
+    environment:
+      - POSTGRES_DB=test
+      - POSTGRES_USER=test
+      - POSTGRES_PASSWORD=123@456
   db:
     image: postgres:16-alpine
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U test" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
     ports:
       - '5432:5432'
     volumes:
@@ -23,4 +31,5 @@ services:
       - POSTGRES_USER=test
       - POSTGRES_PASSWORD=123@456
 volumes:
+  static_volume:
   postgres-data:
